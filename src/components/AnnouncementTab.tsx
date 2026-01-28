@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { getAPIBaseURL } from '@/lib/config';
-import { createClient } from '@metagptx/web-sdk';
 import {
     Card,
     CardContent,
@@ -14,8 +13,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, Upload, Play, Trash2, Pause, FolderOpen } from 'lucide-react';
-
-const client = createClient();
 
 export default function AnnouncementTab() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
