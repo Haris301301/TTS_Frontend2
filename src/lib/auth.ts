@@ -16,7 +16,9 @@ class RPApi {
             (config) => {
                 const token =
                     localStorage.getItem('auth_token') ||
-                    localStorage.getItem('token');
+                    localStorage.getItem('token') ||
+                    sessionStorage.getItem('auth_token') ||
+                    sessionStorage.getItem('token');
                 if (token) {
                     config.headers.Authorization = `Bearer ${token}`;
                 }

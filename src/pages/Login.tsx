@@ -37,14 +37,18 @@ export default function Login() {
                 const token = response.data.token;
 
                 // Bersihkan token lama
-                localStorage.removeItem('authToken');
-                sessionStorage.removeItem('authToken');
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('token');
+                sessionStorage.removeItem('auth_token');
+                sessionStorage.removeItem('token');
 
-                // Logika Remember Me
+                // Logika Remember Me - simpan dengan key yang konsisten
                 if (rememberMe) {
-                    localStorage.setItem('authToken', token);
+                    localStorage.setItem('auth_token', token);
+                    localStorage.setItem('token', token);
                 } else {
-                    sessionStorage.setItem('authToken', token);
+                    sessionStorage.setItem('auth_token', token);
+                    sessionStorage.setItem('token', token);
                 }
 
                 // Redirect ke Dashboard
