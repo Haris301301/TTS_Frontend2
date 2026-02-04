@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { client } from '@/lib/api';
+import { getAPIBaseURL } from '@/lib/config';
 import {
     Card,
     CardContent,
@@ -21,8 +21,24 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Settings as SettingsIcon, Save } from 'lucide-react';
 
+// ✅ PERBAIKAN: Menggunakan localStorage untuk menyimpan settings (tanpa SDK)
+const SETTINGS_KEY = 'app_settings';
+
+interface AppSettings {
+    volume: number;
+    timezone: string;
+    auto_play_enabled: boolean;
+    default_qori: string;
+}
+
+const defaultSettings: AppSettings = {
+    volume: 80,
+    timezone: 'Asia/Jakarta',
+    auto_play_enabled: true,
+    default_qori: 'Mishari Rashid Alafasy',
+};
+
 export default function Settings() {
-    const [settings, setSettings] = useState<any>(null);
     const [volume, setVolume] = useState(80);
     const [timezone, setTimezone] = useState('Asia/Jakarta');
     const [autoPlayEnabled, setAutoPlayEnabled] = useState(true);
@@ -32,63 +48,39 @@ export default function Settings() {
         loadSettings();
     }, []);
 
-    const loadSettings = async () => {
+    const loadSettings = () => {
         try {
-            const response = await client.entities.settings.query({
-                query: {},
-                limit: 1,
-            });
-
-            if (response.data.items && response.data.items.length > 0) {
-                const userSettings = response.data.items[0];
-                setSettings(userSettings);
-                setVolume(userSettings.volume || 80);
-                setTimezone(userSettings.timezone || 'Asia/Jakarta');
-                setAutoPlayEnabled(userSettings.auto_play_enabled !== false);
+            const saved = localStorage.getItem(SETTINGS_KEY);
+            if (saved) {
+                const settings: AppSettings = JSON.parse(saved);
+                setVolume(settings.volume ?? 80);
+                setTimezone(settings.timezone ?? 'Asia/Jakarta');
+                setAutoPlayEnabled(settings.auto_play_enabled !== false);
             }
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
     };
 
-    const handleSaveSettings = async () => {
+    const handleSaveSettings = () => {
         try {
-            const settingsData = {
+            const settingsData: AppSettings = {
                 volume,
                 timezone,
                 auto_play_enabled: autoPlayEnabled,
-                updated_at: new Date().toISOString(),
+                default_qori: 'Mishari Rashid Alafasy',
             };
 
-            if (settings) {
-                await client.entities.settings.update({
-                    id: settings.id.toString(),
-                    data: settingsData,
-                });
-            } else {
-                await client.entities.settings.create({
-                    data: {
-                        ...settingsData,
-                        default_qori: 'Mishari Rashid Alafasy',
-                        created_at: new Date().toISOString(),
-                    },
-                });
-            }
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData));
 
             toast({
                 title: '✅ Berhasil',
                 description: 'Pengaturan berhasil disimpan',
             });
-
-            loadSettings();
         } catch (error: any) {
-            const detail =
-                error?.data?.detail ||
-                error?.response?.data?.detail ||
-                error.message;
             toast({
                 title: 'Error',
-                description: detail,
+                description: error.message || 'Gagal menyimpan pengaturan',
                 variant: 'destructive',
             });
         }

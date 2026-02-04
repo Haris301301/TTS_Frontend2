@@ -89,8 +89,10 @@ export default function Schedule() {
     // --- EFFECT ---
     useEffect(() => {
         loadData();
-        // ✅ OPTIMISASI: Dari 5 detik menjadi 30 detik (cukup untuk jadwal per-menit)
-        const interval = setInterval(checkAndTriggerAudio, 30000);
+        // ✅ Panggil segera saat mount
+        checkAndTriggerAudio();
+        // ✅ OPTIMISASI: Interval 10 detik untuk akurasi lebih baik
+        const interval = setInterval(checkAndTriggerAudio, 10000);
         return () => clearInterval(interval);
     }, []);
 
@@ -140,15 +142,29 @@ export default function Schedule() {
     const checkAndTriggerAudio = async () => {
         try {
             const res = await fetch(`${getAPIBaseURL()}/api/schedules/check`);
-            if (!res.ok) return;
+            if (!res.ok) {
+                console.warn('❌ Schedule check API error:', res.status);
+                return;
+            }
 
             const data = await res.json();
             const { currentDate, currentTime, announcements, quran } = data;
 
+            console.log(`⏰ Schedule Check: ${currentDate} ${currentTime}`);
+            console.log(
+                `📢 Active Announcements: ${announcements?.length || 0}`,
+            );
+            console.log(`📖 Active Quran: ${quran?.length || 0}`);
+
             // Process Quran schedules
-            quran.forEach((sch: any) => {
+            (quran || []).forEach((sch: any) => {
                 const turnKey = `quran-${sch.id}-${currentDate}-${currentTime}`;
                 if (lastPlayedRef.current !== turnKey) {
+                    console.log(
+                        '🎵 Playing Quran:',
+                        sch.surah_name,
+                        sch.audio_url,
+                    );
                     lastPlayedRef.current = turnKey;
                     playAutomaticAudio(
                         sch.audio_url,
@@ -160,10 +176,15 @@ export default function Schedule() {
             });
 
             // Process Announcement schedules
-            announcements.forEach((sch: any) => {
+            (announcements || []).forEach((sch: any) => {
                 if (!sch.announcement) return;
                 const turnKey = `ann-${sch.id}-${currentDate}-${currentTime}`;
                 if (lastPlayedRef.current !== turnKey) {
+                    console.log(
+                        '🔊 Playing Announcement:',
+                        sch.announcement.title,
+                        sch.announcement.audio_url,
+                    );
                     lastPlayedRef.current = turnKey;
                     playAutomaticAudio(
                         sch.announcement.audio_url,
