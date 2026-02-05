@@ -1,7 +1,17 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, Settings, LogOut, Menu, X } from 'lucide-react'; // ✅ Tambah Icon Menu & X
+import {
+    Home,
+    Calendar,
+    Settings,
+    LogOut,
+    Menu,
+    X,
+    StopCircle,
+} from 'lucide-react'; // ✅ Tambah StopCircle
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { getAPIBaseURL } from '@/lib/config';
 import logo from '../assets/logo.png';
 
 interface LayoutProps {
@@ -11,6 +21,8 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
     const location = useLocation();
     const [isMobileOpen, setIsMobileOpen] = useState(false); // ✅ State untuk Menu HP
+    const [isStoppingAudio, setIsStoppingAudio] = useState(false); // ✅ State untuk Emergency Stop
+    const { toast } = useToast();
 
     // ✅ Fungsi Logout Manual
     const handleLogout = () => {
@@ -19,6 +31,39 @@ export default function Layout({ children }: LayoutProps) {
         sessionStorage.removeItem('auth_token');
         sessionStorage.removeItem('token');
         window.location.href = '/login';
+    };
+
+    // ✅ Fungsi Emergency Stop Audio
+    const handleStopAudio = async () => {
+        setIsStoppingAudio(true);
+        try {
+            const response = await fetch(
+                `${getAPIBaseURL()}/api/v1/audio/stop`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                },
+            );
+
+            if (response.ok) {
+                toast({
+                    title: '🛑 Audio Dihentikan',
+                    description:
+                        'Semua audio yang sedang diputar telah dihentikan.',
+                });
+            } else {
+                throw new Error('Gagal menghentikan audio');
+            }
+        } catch (error) {
+            toast({
+                title: '❌ Error',
+                description:
+                    'Gagal menghentikan audio. Periksa koneksi server.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsStoppingAudio(false);
+        }
     };
 
     const menuItems = [
@@ -115,8 +160,26 @@ export default function Layout({ children }: LayoutProps) {
                     })}
                 </nav>
 
-                {/* Bagian Logout */}
-                <div className="p-4 border-t border-gray-800 bg-gray-900 mt-auto">
+                {/* Bagian Emergency Stop & Logout */}
+                <div className="p-4 border-t border-gray-800 bg-gray-900 mt-auto space-y-2">
+                    {/* ✅ TOMBOL EMERGENCY STOP */}
+                    <Button
+                        onClick={handleStopAudio}
+                        disabled={isStoppingAudio}
+                        variant="destructive"
+                        className={`w-full justify-start bg-red-600 hover:bg-red-700 text-white group transition-all cursor-pointer ${
+                            isStoppingAudio ? 'animate-pulse' : ''
+                        }`}
+                    >
+                        <StopCircle className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold">
+                            {isStoppingAudio
+                                ? 'Menghentikan...'
+                                : 'Emergency Stop'}
+                        </span>
+                    </Button>
+
+                    {/* Tombol Logout */}
                     <Button
                         onClick={handleLogout}
                         variant="ghost"
